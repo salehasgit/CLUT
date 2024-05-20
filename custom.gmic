@@ -1,0 +1,67 @@
+
+# $ gmic -m custom.gmic -generate_CLUT
+
+generate_CLUT :
+v + 
+resolution=64
+resolution1={$resolution-1} 
+$resolution,$resolution,$resolution,4 
+
+uniformSampling=2 # choice{0,"None","8 Keypoints (RGB Corners)","27 Keypoints","64 Keypoints","125 Keypoints","216 Keypoints","343 Keypoints"},
+if $uniformSampling # Lock uniform sampling
+  uniform_distribution {(1+$uniformSampling)^3},3 
+  repeat 
+  w point.. {round($resolution1*I[$>])},1,{255*I[$>]},1 
+  done 
+  -d
+  rm.
+  c. 0,255 -o test.png
+fi
+
+-input keypoints_SG_96x2.png # Add user-defined color correspondences
+s. x 
+-rotate[-1,-2] -90
+nb_keypoints={w} 
+repeat $nb_keypoints
+  mode=2
+  if $mode # if not ignore (lock or replace)
+    tRGB=I[$>]
+    echo {$tRGB}
+    mv[-1] 0
+    sRGB=I[$>] 
+    echo {$sRGB}
+    mv[-1] 0
+    xyz={round(($resolution1/255)*$sRGB)}
+    point. $xyz,1,{$mode==2?$sRGB:$sRGB},1 
+    mv[-1] 0
+  fi
+done
+
+rm[-2,-1]
+keypoint_influence=100
+s c,-3
+
+if $keypoint_influence<100 # Need to compute a weighting map.
+  +distance. 1
+  if $keypoint_influence ^. {1/(0.05+4*$keypoint_influence%)} else f. 0 fi
+  n. 0,1 nm. influence mv. -3
+fi
+
+==. 0 inpaint_pde.. .,100%,1,20 rm. c. 0,255
+
+if $influence
+    100%,100%,100%,3,[x,y,z] n. 0,255
+    j. ..,0,0,0,0,1,...
+    rm[-3,-2]
+fi
+# save it 
+c. 0,255 -o. lut.cube
+
+# Apply CLUT
+-input keypoints_SG_96x2.png
+s. x
+map_clut.. [0] # w/o spatial regularization
+-d v - # if all went well, then last 2 images should be almost identical!
+
+
+
