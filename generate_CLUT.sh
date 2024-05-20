@@ -1,16 +1,17 @@
 # given src and dst keypoints, this script generates the CLUT that maps the src colors to the dst colors
 #
-# $ ./generate_CLUT.sh src.txt dst.txt colorCard interpolation_tech cube_resolution setup_exposure
+# $ ./generate_CLUT.sh src.txt dst.txt colorCard interpolation_tech cube_resolution setup_exposure result_folder
 # src/dst.txt           : txt file with RGB values in columns 3,4 and 5, each row one color, starting from row 9 with an extra line after the last color. This format corresponds with 3DLUTCreator colorChart format.
 # colorCard              : SG, IT8 or SG+IT8
 # cube_resolution       : resolution higher than 64 is not usually noticable.
 # setup_exposure        : the exposure corresponding to the src snd dst keypoints, only for the purpose of proper naming(no effect on the final CLUT)
+# result_folder        : output folder
 
-
-OUT_folder="OUT"
-mkdir $OUT_folder
 
 args=("$@")
+OUT_folder="${args[6]}"
+mkdir $OUT_folder
+
 src_keypoints_txt="${args[0]}"
 dst_keypoints_txt="${args[1]}"
 
@@ -123,6 +124,6 @@ gmic -input_cube $OUT_folder/lut${cube_resolution}_${card}_${method}_exp_$setup_
 
 # checking:
 # fx_apply_haldclut 2,"/Users/sm/Dropbox (VR Holding BV)/LUT experiments/Real/Lab_transfer_test/lut64.png",100,0,0,0,0,0,0,0,50,50
-gmic $OUT_folder/keypoints_src_$card.png -input_cube $OUT_folder/lut${cube_resolution}_${card}_${method}_exp_$setup_exposure.cube  +map_clut[0] [1] -o. $OUT_folder/keypoints_src_${card}_mapped_BY_lut${cube_resolution}_${card}_${method}_exp_$setup_exposure.png
+gmic $OUT_folder/keypoints_src_$card.png -input_cube $OUT_folder/lut${cube_resolution}_${card}_${method}_exp_$setup_exposure.cube  +map_clut[0] [1] -o. $OUT_folder/keypoints_src_${card}_mapped_BY_lut${cube_resolution}_${card}_${method}_exp_$setup_exposure.png -d
 
 # [G'MIC] Customize CLUT: fx_customize_clut 100,1,10,0,0,0,0,0,0,1,8,0.5,2,0,0,0,255,255,255,1,255,0,0,255,255,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 #1

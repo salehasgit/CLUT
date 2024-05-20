@@ -16,7 +16,7 @@ if $uniformSampling # Lock uniform sampling
   rm.
 fi
 
--input OUT/keypoints_SG_96x2.png # Add user-defined color correspondences
+-input $1 # Add user-defined color correspondences
 s. x 
 -rotate[-1,-2] -90
 nb_keypoints={w} 
@@ -60,14 +60,19 @@ if $keypoint_influence<100 # if {$influence} is buggy!
   rm[-3,-2]
 fi
 
-# save it 
-c. 0,255 -o. OUT/lut.cube
+# save it as .cube
+OUT_folder=$2
+c. 0,255 -o. $OUT_folder/lut_$OUT_folder.cube
 
 # Apply CLUT
--input OUT/keypoints_SG_96x2.png
+-input $1
 s. x
 map_clut.. [0] # w/o spatial regularization
 -d v - # if all went well, then last 2 images should be almost identical!
+
+rm[-2,-1]
+#convert to Haldclut png    
+-r 64,64,64,3,3 -r 512,512,1,3,-1 -o $OUT_folder/lut_$OUT_folder.png
 
 
 
