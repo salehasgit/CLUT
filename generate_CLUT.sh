@@ -1,4 +1,4 @@
-# given src and dst keypoints, this script generates the CLUT that maps the src colors to the dst colors
+# given src and dst keypoints, this script generates the CLUT that maps the src colors to the dst colors with no uniform sampling (uniformSampling=0, i.e. not locking any corner by default). Run this script first to generate the color correspondences png for the custom script.
 #
 # $ ./generate_CLUT.sh src.txt dst.txt colorCard interpolation_tech cube_resolution setup_exposure result_folder
 # src/dst.txt           : txt file with RGB values in columns 3,4 and 5, each row one color, starting from row 9 with an extra line after the last color. This format corresponds with 3DLUTCreator colorChart format.
@@ -127,3 +127,5 @@ gmic -input_cube $OUT_folder/lut${cube_resolution}_${card}_${method}_exp_$setup_
 gmic $OUT_folder/keypoints_src_$card.png -input_cube $OUT_folder/lut${cube_resolution}_${card}_${method}_exp_$setup_exposure.cube  +map_clut[0] [1] -o. $OUT_folder/keypoints_src_${card}_mapped_BY_lut${cube_resolution}_${card}_${method}_exp_$setup_exposure.png -d
 
 # [G'MIC] Customize CLUT: fx_customize_clut 100,1,10,0,0,0,0,0,0,1,8,0.5,2,0,0,0,255,255,255,1,255,0,0,255,255,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 #1
+
+#[G'MIC] CLUT from After - Before Layers: fx_clut_from_ab 2,4,"C:/Users/sm/Dropbox (VR Holding BV)/LUT experiments/Real/CK_color_grading/LUT_from_before_after","output.cube",100

@@ -1,5 +1,5 @@
 
-# $ gmic -m custom.gmic -generate_CLUT
+# $ gmic -m custom.gmic -generate_CLUT keypoints.png,uniformSampling
 
 generate_CLUT :
 v + 
@@ -7,7 +7,7 @@ resolution=64
 resolution1={$resolution-1} 
 $resolution,$resolution,$resolution,4 
 
-uniformSampling=3 # choice{0,"None","8 Keypoints (RGB Corners)","27 Keypoints","64 Keypoints","125 Keypoints","216 Keypoints","343 Keypoints"},
+uniformSampling=$2 # choice{0,"None","8 Keypoints (RGB Corners)","27 Keypoints","64 Keypoints","125 Keypoints","216 Keypoints","343 Keypoints"},
 if $uniformSampling # Lock uniform sampling
   uniform_distribution {(1+$uniformSampling)^3},3 
   repeat 
@@ -60,9 +60,10 @@ if $keypoint_influence<100 # if {$influence} is buggy!
   rm[-3,-2]
 fi
 
+c. 0,255 
+
 # save it as .cube
-OUT_folder=$2
-c. 0,255 -o. $OUT_folder/lut_$OUT_folder.cube
+-o. lut_uniformSampling$uniformSampling.cube
 
 # Apply CLUT
 -input $1
@@ -72,7 +73,9 @@ map_clut.. [0] # w/o spatial regularization
 
 rm[-2,-1]
 #convert to Haldclut png    
--r 64,64,64,3,3 -r 512,512,1,3,-1 -o $OUT_folder/lut_$OUT_folder.png
+-r 64,64,64,3,3 -r 512,512,1,3,-1 -o lut_uniformSampling$uniformSampling.png
 
+#visualize the cube
+distribution3d colorcube3d primitives3d 1 add3d
 
 
