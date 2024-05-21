@@ -1,6 +1,5 @@
 
 # $ gmic -m custom.gmic -generate_CLUT keypoints.png,uniformSampling
-
 generate_CLUT :
 v + 
 resolution=64
@@ -78,4 +77,11 @@ rm[-2,-1]
 #visualize the cube
 distribution3d colorcube3d primitives3d 1 add3d
 
+# $ gmic -m custom.gmic -generate_CLUT_beforeAfter src.tif,dst.tif,out_folder,clut_name,keypoints_influence
+# e.g. gmic -m ../../custom.gmic clut_from_ab fromRawCon_off8bit_beforeCA_3_color_corrected_Humphrey.tif,Humphrey_reference_fromRawCon_off8bit_beforeCA_+3.tif,./,test.png,100
 
+clut_from_ab :
+v + 
+-input $1
+-input $2
+-fx_clut_from_ab 2,4,$3,$4,$5
