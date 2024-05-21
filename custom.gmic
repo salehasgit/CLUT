@@ -1,4 +1,5 @@
 
+#=================================================================================================================================
 # $ gmic -m custom.gmic -generate_CLUT keypoints.png,uniformSampling
 generate_CLUT :
 v + 
@@ -42,17 +43,18 @@ rm[-2,-1]
 keypoint_influence=100
 s c,-3
 
+# create a weighting map image and move it to [0]
 if $keypoint_influence<100 # Need to compute a weighting map.
   +distance. 1
   if $keypoint_influence ^. {1/(0.05+4*$keypoint_influence%)} else f. 0 fi
   n. 0,1 nm. influence mv. -3
 fi
 
-==. 0 # generate the mask (all pixels)
+==. 0 # generate the mask (all pixels so no mask!)
 inpaint_pde.. .,100%,1,20 
 rm. # remove the mask
 
-if $keypoint_influence<100 # if {$influence} is buggy!
+if $keypoint_influence<100 # using "if {$influence}" instead is buggy!
   100%,100%,100%,3,[x,y,z] n. 0,255
   j. ..,0,0,0,0,1,...
   -d
@@ -77,6 +79,7 @@ rm[-2,-1]
 #visualize the cube
 distribution3d colorcube3d primitives3d 1 add3d
 
+#=================================================================================================================================
 # $ gmic -m custom.gmic -generate_CLUT_beforeAfter src.tif,dst.tif,out_folder,clut_name,keypoints_influence
 # e.g. gmic -m ../../custom.gmic clut_from_ab fromRawCon_off8bit_beforeCA_3_color_corrected_Humphrey.tif,Humphrey_reference_fromRawCon_off8bit_beforeCA_+3.tif,./,test.png,100
 
@@ -85,3 +88,9 @@ v +
 -input $1
 -input $2
 -fx_clut_from_ab 2,4,$3,$4,$5
+-input $3/$4 mv[-1] 0
+map_clut[-1] [0] # Apply CLUT
+-d v - # if all went well, then last 2 images should be almost identical!
+rm[^0]
+distribution3d colorcube3d primitives3d 1 add3d
+v -
