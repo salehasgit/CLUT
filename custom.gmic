@@ -3,9 +3,9 @@
 # $ gmic -m custom.gmic -generate_CLUT keypoints.png,uniformSampling,keypoint_influence
 generate_CLUT :
 v + 
-cube_resolution_idx=64
-cube_resolution1={$cube_resolution_idx-1} 
-$cube_resolution_idx,$cube_resolution_idx,$cube_resolution_idx,4 
+cube_resolution=64
+cube_resolution1={$cube_resolution-1} 
+$cube_resolution,$cube_resolution,$cube_resolution,4 
 
 uniformSampling=$2 # choice{0,"None","8 Keypoints (RGB Corners)","27 Keypoints","64 Keypoints","125 Keypoints","216 Keypoints","343 Keypoints"},
 if $uniformSampling # Lock uniform sampling
@@ -42,23 +42,21 @@ done
 rm[-2,-1]
 keypoint_influence=$3
 s c,-3
-
 # create a weighting map image and move it to [0]
 if $keypoint_influence<100 # Need to compute a weighting map.
   +distance. 1
   if $keypoint_influence ^. {1/(0.05+4*$keypoint_influence%)} else f. 0 fi
   n. 0,1 nm. influence mv. -3
 fi
-
-==. 0 # generate the mask (all pixels so no mask!)
-inpaint_pde.. .,100%,1,20 
+==. 0 # generate the mask
+inpaint_pde.. .,100%,1,20 #Inpaint image [1] by mask ., using a multiscale diffusion algorithm with 100% scales and 20 iterations of delaunay-guided diffusion.
 rm. # remove the mask
 
 if $keypoint_influence<100 # using "if {$influence}" instead is buggy!
-  100%,100%,100%,3,[x,y,z] n. 0,255
-  j. ..,0,0,0,0,1,...
-  -d
-  rm[-3,-2]
+  100%,100%,100%,3,[x,y,z] #Input image at position 2, with values '[x,y,z]' (1 image 64x64x64x3).
+  n. 0,255 #Normalize image [2] in range [0,255], with constant-case ratio 0.
+  j. ..,0,0,0,0,1,...  #Draw image [1] at (0,0,0,0) on image [2], with opacity 1 and mask [0].
+  rm[-3,-2]  #Remove images [0,1] (1 image left).
 fi
 
 c. 0,255 
@@ -82,16 +80,17 @@ distribution3d colorcube3d primitives3d 1 add3d
 #=================================================================================================================================
 # $ gmic -m custom.gmic -generate_CLUT_beforeAfter src.tif,dst.tif,out_folder,clut_name,keypoints_influence
 # TODO: keypoints_influence is playing a major role and needs to be investigated further
-# e.g. gmic -m ../../custom.gmic clut_from_ab fromRawCon_off8bit_beforeCA_3_color_corrected_Humphrey.tif,Humphrey_reference_fromRawCon_off8bit_beforeCA_+3.tif,./,test.png,100
+# e.g. gmic -m custom.gmic clut_from_ab srcImg.tif,srcImg_color_corrected_Humphrey.tif,./,lut.png,100
 
 clut_from_ab :
 v + 
--input $1 if $!==2 rm. fi
--input $2 if $!==3 rm. fi
+-input $1 if $!==2 rm. fi #remove thumbnail img
+-input $2 if $!==3 rm. fi #remove thumbnail img
+mv. 0
 
 #-fx_clut_from_ab 2,4,$3,$4,$5
-cube_resolution_idx=4 #choice{4,16,25,36,49,64,81,100,121,144,169,225,256}
-i[0] {a=64;[a,a,a]},4 #Input black image at position 0 (1 image 64x64x64x4).
+cube_resolution=64
+i[0] {a=$cube_resolution;[a,a,a]},4 #Input black image at position 0.
 f[1] ">I(#0,round(I(#2)*(w#0-1)/255))+=[R,G,B,1]; I" #Fill image [1] with expression '>I(#0,round(I(#2)*(w#0-1)/255))+=[R,G,B,1]; I'.
 l[0]
   s c,-3
@@ -104,13 +103,14 @@ l[0]
   exp. #Compute pointwise exponential of image [1].
   f.. "f = i(#-1); f*I + (1-f)*[x,y,z]*255/(w-1)" #Fill image [0] with expression 'f = i(#-1); f*I + (1-f)*[x,y,z]*255/(w-1)'
   rm.
-  S={arg(1+$cube_resolution_idx,16,25,36,49,64,81,100,121,144,169,225,256)} if $S!=w r. $S,$S,$S,3,3 fi
+  if w!=64 r. 64,64,64,3,3 fi
 endl
 
 is_png={str=lowercase(['"$4"']);find(str,'.png')==size(str)-4}
 is_cube={str=lowercase(['"$4"']);find(str,'.cube')==size(str)-5}
 if !$is_png" && "!$is_cube $!is_ciube error "Filename extension must be '.cube' or '.png'." fi
-if $is_png r[0] {0,r=round(whd^0.5);[r,r]},1,3,-1 o[0] "$3/$4"
+if $is_png 
+  r[0] {0,r=round(whd^0.5);[r,r]},1,3,-1 o[0] "$3/$4"
 else
   if {0,w>32} r3dx[0] 32 fi
   output_cube[0] "$3/$4"
