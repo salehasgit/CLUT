@@ -141,16 +141,32 @@ l[0]
   inpaint_pde.. .,100%,1,20 #Inpaint image [0] by mask ., using a multi-scale diffusion algorithm with 75% scales (Smoothness) and 20 iterations of delaunay-guided diffusion.
   c.. 0,255
   
-  distance. 0 #Compute distance map to isovalue 0 in the mask image, with euclidean metric (put the result in the mask image). Pixels with the isovalue 0 (keypoints) will always be zero since they are no distance at all from themselves.
   keypoints_influence=$7
-  if $keypoints_influence>0
-    *. {-1/$keypoints_influence} # Multiply image [1] by {-1/(1+$keypoints_influence)}. Influence of Color Samples applied here ($6) 
+  if 0
+    distance. 0 #Compute distance map to isovalue 0 in the mask image, with euclidean metric (put the result in the mask image). Pixels with the isovalue 0 (keypoints) will always be zero since they are no distance at all from themselves.
+    *. {-1/(1+$keypoints_influence)} # Multiply image [1] by {-1/(1+$keypoints_influence)}. Influence of Color Samples applied here ($6) 
+    exp. #Compute pointwise exponential of image [1].
+    f.. "f = i(#-1); f*I + (1-f)*[x,y,z]*255/(w-1)" #Fill image [0] with expression 'f = i(#-1); f*I + (1-f)*[x,y,z]*255/(w-1)' 
+    rm.
   else
-    *. -1
+    # if influence is less than 100%, create and apply a weighting map
+    if $keypoints_influence<100 # Need to compute a weighting map.
+      if $keypoints_influence #if influence is zero, the weighting map is the same as the inverted and normalized alpha image
+        distance. 0 #Compute distance map to isovalue 1 in image [1], with euclidean metric. Pixels with the isovalue 1 will always be zero since they are no distance at all from themselves.
+        ^. {1/(0.05+4*(100-$keypoints_influence)%)} 
+      fi
+      *. -1
+      n. 0,1
+      nm. influence 
+      mv. 0
+      100%,100%,100%,3,[x,y,z] #Input image at position 2, with values '[x,y,z]' (1 image 64x64x64x3).
+      n. 0,255 #Normalize image [2] in range [0,255], with constant-case ratio 0.
+      j. ..,0,0,0,0,1,[0]  #Draw image [1] at (0,0,0,0) on image [2], with opacity 1 and mask [0].
+      rm[^-1]  #Remove images [0,1] (1 image left).
+    else
+      rm.
+    fi
   fi
-  exp. #Compute pointwise exponential of image [1].
-  f.. "f = i(#-1); f*I + (1-f)*[x,y,z]*255/(w-1)" #Fill image [0] with expression 'f = i(#-1); f*I + (1-f)*[x,y,z]*255/(w-1)' 
-  rm.
 endl
 
 clut_write_n_plot $0,$3,$4,$6,$7,$8,$1,$2,$5
