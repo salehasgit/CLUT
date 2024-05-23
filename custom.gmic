@@ -1,10 +1,10 @@
 
 #=================================================================================================================================
-# $ gmic -m custom.gmic -clut_from_customKeypoints src.png,dst.png,out_folder,clut_name,uniformSampling,keypoints_influence,cube_resolution
-# e.g. gmic -m custom.gmic clut_from_customKeypoints dropBox/IN/keypoints_+1_apple_IT8.png,dropBox/IN/keypoints_+1_canon_IT8.png,dropBox/OUT/,IT8.png,3,100,64
+# $ gmic -m custom.gmic -clut_from_kp src.png,dst.png,out_folder,clut_name,uniformSampling,keypoints_influence,cube_resolution
+# e.g. gmic -m custom.gmic clut_from_kp dropBox/IN/kp_+1_apple_IT8.png,dropBox/IN/kp_+1_canon_IT8.png,dropBox/OUT/,IT8.png,3,100,64
 # TODO: keypoints_influence is not as effective as it should (compared to "clut_from_ab" command) and needs to be investigated further
 
-clut_from_customKeypoints :
+clut_from_kp :
 v + 
 
 # Add user-defined color correspondences
@@ -73,7 +73,6 @@ v +
 -input $1 if $!==2 rm. fi #remove thumbnail img
 -input $2 if $!==3 rm. fi #remove thumbnail img
 
-
 #-fx_clut_from_ab 2,4,$3,$4,$5
 cube_resolution=$7 # 64 is a good tradeoff: higher than 64 takes more computational time but cld improve very close keypoints
 cube_resolution1={$cube_resolution-1} 
@@ -131,19 +130,25 @@ if !$is_png" && "!$is_cube $!is_ciube error "Filename extension must be '.cube' 
 strreplace '$clut_name','.png','' # buggy
 e $clut_name
 
-if $is_png # Warning: by saving in a 512x512 image, we loose some precision. The highest precision can be acheived by setting the cube resolution to higher than 64 and saving in cube format or bigger image dimention if possible.
+if $is_png # Warning: by saving in a 512x512 image, we loose some precision. The highest precision can be acheived by setting the cube resolution to higher than 64 and saving in cube format or bigger image dimensions if possible.
   if {0,w!=64} r[0] 64,64,64,3,3 fi
   r[0] {0,r=round(whd^0.5);[r,r]},1,3,-1 #Resize image [0] to 512x512x1x3, with no interpolation, dirichlet boundary conditions and alignment (0,0,0,0).
-  o[0] $out_folder/lut_uniformSampling{$uniformSampling}_keypoints_influence{$keypoints_influence}_cube_resolution{$cube_resolution}_$clut_name
+  o[0] $out_folder/lut_US{$uniformSampling}_KI{$keypoints_influence}_CR{$cube_resolution}_$clut_name
 else
   #if {0,w>32} r3dx[0] 32 fi # uncomment this line for less accurate mapping but a lighter file size
-  output_cube[0] $out_folder/lut_uniformSampling{$uniformSampling}_keypoints_influence{$keypoints_influence}_cube_resolution{$cube_resolution}_$clut_name
+  output_cube[0] $out_folder/lut_US{$uniformSampling}_KI{$keypoints_influence}_CR{$cube_resolution}_$clut_name
 fi
 
 map_clut.. [0] # Apply CLUT
 -d # if all went well, then last 2 images should be almost identical!
--o. $out_folder/dst_for_lut_uniformSampling{$uniformSampling}_keypoints_influence{$keypoints_influence}_cube_resolution{$cube_resolution}_$clut_name
--o.. $out_folder/src_colorGraded_by_lut_uniformSampling{$uniformSampling}_keypoints_influence{$keypoints_influence}_cube_resolution{$cube_resolution}_$clut_name
+
+if $is_png
+  -o. $out_folder/dst_for_lut_US{$uniformSampling}_KI{$keypoints_influence}_CR{$cube_resolution}_$clut_name
+  -o.. $out_folder/src_colorGraded_by_lut_US{$uniformSampling}_KI{$keypoints_influence}_CR{$cube_resolution}_$clut_name
+else
+  -o. $out_folder/dst_for_lut_US{$uniformSampling}_KI{$keypoints_influence}_CR{$cube_resolution}_$clut_name.png
+  -o.. $out_folder/src_colorGraded_by_lut_US{$uniformSampling}_KI{$keypoints_influence}_CR{$cube_resolution}_$clut_name.png
+fi
 rm[^0]
 
 #visualize the cube (Get 3D color distribution of the LUT)
