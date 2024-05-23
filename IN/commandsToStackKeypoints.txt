@@ -1,0 +1,7 @@
+to merge 2:
+(sed '$ d' +0_apple.txt ; tail -n '+9' -- +1_apple.txt) > +0_+1_apple.txt
+(sed '$ d' +0_canon.txt ; tail -n '+9' -- +1_canon.txt) > +0_+1_canon.txt
+
+to merge 4:
+(sed '$ d' -1_apple.txt ; sed '$ d' +0_apple.txt | tail -n '+9'; sed '$ d' +1_apple.txt | tail -n '+9'; tail -n '+9' -- +2_apple.txt) > -1_+2_apple.txt
+(sed '$ d' -1_canon.txt ; sed '$ d' +0_canon.txt | tail -n '+9'; sed '$ d' +1_canon.txt | tail -n '+9'; tail -n '+9' -- +2_canon.txt) > -1_+2_canon.txt
