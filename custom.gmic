@@ -23,19 +23,13 @@ nb_keypoints={w}
 repeat $nb_keypoints
   mode=2 # choice{"ignore","lock", "replace"} TODO: extend the script to take "mode" from the 3th column of the user-defined color correspondences img 
   if $mode # if not ignore (lock or replace)
-    tRGB=[{I[$>]}] #TODO: try I(#-1)[$>]
-    echo {$tRGB}
-    mv[-1] 0
-    sRGB=[{I[$>]}]
-    echo {$sRGB}
+    tRGB=[{I(#-1,$>)}]
+    #echo {$tRGB}
+    sRGB=[{I(#-2,$>)}]
     xyz={round(($cube_resolution1/255)*$sRGB)}
-
     if $mode==2 pixel_RGB=$tRGB else pixel_RGB=$sRGB fi
-     
-    mv[-1] 0
-    point. $xyz,1,{$pixel_RGB},1 
-    mv[-1] 0
-    
+
+    point[0] $xyz,1,{$pixel_RGB},1 
   fi
 done
 
@@ -90,9 +84,11 @@ mv. 0
 
 #-fx_clut_from_ab 2,4,$3,$4,$5
 cube_resolution=64
-i[0] {a=$cube_resolution;[a,a,a]},4 #Input black image at position 0.
+i[0] $cube_resolution,$cube_resolution,$cube_resolution,4 #== {a=$cube_resolution;[a,a,a]},4 #Input black image at position 0.
 f[1] ">I(#0,round(I(#2)*(w#0-1)/255))+=[R,G,B,1]; I" #Fill image [1] with expression '>I(#0,round(I(#2)*(w#0-1)/255))+=[R,G,B,1]; I'.
+-d
 l[0]
+  -d
   s c,-3
   +max. 1
   /[-3,-1] # Divide images [0,2] (will rm img 2)
