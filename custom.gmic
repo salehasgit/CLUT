@@ -62,7 +62,7 @@ l[0]
   s c,-3 #Split image [0] along the 'c'-axis, into blocs of 3 pixels (so replacing the 4d img with one 3d rgb img and one 3d alpha img which is 1 for non-zero values(keypoints) and zero everywhere else
 
   ==. 0 # generate the mask by: Compute boolean equality between image [2] and value 0 (all black voxels in both images,i.e. all voxels except keypoints.this puts the result in last image which is alpha image
-  inpaint_pde.. .,100%,1,20 #Inpaint image [1] by mask ., using a multiscale diffusion algorithm with 100% scales (Smoothness) and 20 iterations of delaunay-guided diffusion.
+  inpaint_pde.. .,100%,1,20 #Inpaint image [1] by mask ., using a multiscale diffusion algorithm with 100% scales (Smoothness) and 20 iterations of delaunay-guided diffusion. decompress_clut_pde is a simple version of this func
   c.. 0,255
 
   keypoints_influence=$7
@@ -76,7 +76,8 @@ l[0]
     n. 0,1
     nm. influence 
     mv. 0
-    100%,100%,100%,3,[x,y,z] #Input image at position 2, with values '[x,y,z]' (1 image 64x64x64x3).
+    #create a neutral lut
+    100%,100%,100%,3,[x,y,z] #Input image at position 2, with values '[x,y,z]'.
     n. 0,255 #Normalize image [2] in range [0,255], with constant-case ratio 0.
     j. ..,0,0,0,0,1,[0]  #Draw image [1] at (0,0,0,0) on image [2], with opacity 1 and mask [0].
     rm[^-1]  #Remove images [0,1] (1 image left).
@@ -138,7 +139,7 @@ l[0]
   /[-3,-1] # Divide images [0,2] (will rm img 2). This will put the average of one-to-many keypoints.
   
   ==. 0 # generate the mask by: Compute boolean equality between image 1 (3d alpha img) and value 0 (i.e. all black voxels in both images,i.e. all voxels except keypoints).this puts the result in last image which is alpha image. 
-  inpaint_pde.. .,100%,1,20 #Inpaint image [0] by mask ., using a multi-scale diffusion algorithm with 75% scales (Smoothness) and 20 iterations of delaunay-guided diffusion.
+  inpaint_pde.. .,100%,1,20 #Inpaint image [0] by mask ., using a multi-scale diffusion algorithm with 75% scales (Smoothness) and 20 iterations of delaunay-guided diffusion. decompress_clut_pde is a simple version of this func
   c.. 0,255
   
   keypoints_influence=$7
