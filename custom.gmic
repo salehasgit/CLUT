@@ -60,26 +60,36 @@ fi
 
 keypoints_influence=$7
 l[0]
-  s c,-3
+  s c,-3 #Split image [0] along the 'c'-axis, into blocs of 3 pixels (so replacing the 4d img with one 3d rgb img and one 3d alpha img which is 1 for non-zero values(keypoints) and zero everywhere else)
   # create a weighting map image and move it to [0]
   if $keypoints_influence<100 # Need to compute a weighting map.
     +distance. 1
     if $keypoints_influence 
-      ^. {1/(0.05+4*$keypoints_influence%)} 
+      ^. {1/(0.05+4*(100-$keypoints_influence)%)} 
+      *. -1
     else 
-      f. 0 
+      f. 0
     fi
-    n. 0,1 nm. influence mv. -3
+    n. 0,1 
+    nm. influence 
+    mv. -3
   fi
-  ==. 0 # generate the mask
+  -d
+
+  todo: mask between weight and alpha or rgb and alpha seems to be identical. test it and then move the influence to the end
+  ==. 0 # generate the mask (all black pixels in both images,i.e. all voxels except keypoints if influence=100 (i.e. between 3d rgb img and 3d alpha img) or all voxels except where the weight is not zero if influence<100 (i.e. between weight img and 3d alpha img)).this puts the result in last image which is alpha image
+  -d
   inpaint_pde.. .,100%,1,20 #Inpaint image [1] by mask ., using a multiscale diffusion algorithm with 100% scales (Smoothness) and 20 iterations of delaunay-guided diffusion.
   rm. # remove the mask
-
-  if $keypoints_influence<100 # using "if {$influence}" instead is buggy!
-    100%,100%,100%,3,[x,y,z] #Input image at position 2, with values '[x,y,z]' (1 image 64x64x64x3).
-    n. 0,255 #Normalize image [2] in range [0,255], with constant-case ratio 0.
-    j. ..,0,0,0,0,1,...  #Draw image [1] at (0,0,0,0) on image [2], with opacity 1 and mask [0].
-    rm[-3,-2]  #Remove images [0,1] (1 image left).
+  if $keypoints_influence<100 
+    if $keypoints_influence!=0 
+      100%,100%,100%,3,[x,y,z] #Input image at position 2, with values '[x,y,z]' (1 image 64x64x64x3).
+      n. 0,255 #Normalize image [2] in range [0,255], with constant-case ratio 0.
+      j. ..,0,0,0,0,1,...  #Draw image [1] at (0,0,0,0) on image [2], with opacity 1 and mask [0].
+      rm[-3,-2]  #Remove images [0,1] (1 image left).
+    else
+      rm[0]
+    fi
   fi
 endl
 
@@ -137,6 +147,7 @@ l[0]
   /[-3,-1] # Divide images [0,2] (will rm img 2)
   ==. 0 #Compute boolean equality between image [1] and 0 (put the result in img 1). This is the mask for inpainting
   inpaint_pde.. .,100%,1,20 #Inpaint image [0] by mask ., using a multi-scale diffusion algorithm with 75% scales (Smoothness) and 20 iterations of delaunay-guided diffusion.
+  -d
   distance. 0 #Compute distance map to isovalue 0 in image [1], with euclidean metric (put the result in img 1).
   if $keypoints_influence>0
     *. {-1/$keypoints_influence} # Multiply image [1] by {-1/(1+$keypoints_influence)}. Influence of Color Samples applied here ($6) 
@@ -267,7 +278,7 @@ if $9
   p3d. 1 #Convert primitives of selected 3D objects to outlines
 
   +3d[0--1] 
-  pose3d. 5.10656,2.04904,2.723,-316.115,-0.0815767,4.97762,-3.59262,-41.7094,-3.40685,2.95212,4.16756,-118.811,0,0,203,1
+  #pose3d. 5.10656,2.04904,2.723,-316.115,-0.0815767,4.97762,-3.59262,-41.7094,-3.40685,2.95212,4.16756,-118.811,0,0,203,1
   -d3d.
   snapshot3d. {0,1.1*1024},1,64,64,64
   autocrop. -. 64 r. {0,1024},{0,1024},1,3,0,0,0.5,0.5 +. 64
