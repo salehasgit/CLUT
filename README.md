@@ -31,7 +31,8 @@ Run `clut_from_ab` instead if the input images are not one-column and there is n
 
 See each script for more details about the arguments and parameters.
 
-Refer to `LUT%20experiments/Real/G'MIC` and `Apple\ RAW\ converter/LUT_revisited_2020/refrence_RAWs_and_TIFFs` for a dataset of sample shots from various machines, various cameras, taken with various exposures and converted on various OSes using Apple and Canon converter.
+Alongside the generated clut, both commands will save a copy of the `dst.png` as well as the result of applying the clut on the `src.png` . One expects minor differences between these two images. To apply the new lut on your image of choice, follow `Apple%20RAW%20converter/ARC_test_pack/readMe.md`
+
 
 ## Installing GMIC
 On MacOS, tested with GMIC v 2.9.1
