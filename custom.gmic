@@ -1,4 +1,7 @@
-
+#  custom.gmic
+#
+#  Created by Saleh Mosaddegh on 25/06/2020, Haarlem.
+#  Copyright © 2020 StyleShoots. All rights reserved.
 #=================================================================================================================================
 # $ gmic -m custom.gmic -clut_from_kp src.png,dst.png,out_folder,clut_name,uniformSampling,keypoints_influence,cube_resolution
 # e.g. gmic -m custom.gmic clut_from_kp dropBox/IN/kp_+1_apple_IT8.png,dropBox/IN/kp_+1_canon_IT8.png,dropBox/OUT/,IT8.png,3,100,64
