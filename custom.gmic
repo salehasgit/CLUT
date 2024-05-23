@@ -142,7 +142,10 @@ fi
 
 map_clut.. [0] # Apply CLUT
 -d # if all went well, then last 2 images should be almost identical!
+-o. $out_folder/dst_for_lut_uniformSampling{$uniformSampling}_keypoints_influence{$keypoints_influence}_cube_resolution{$cube_resolution}_$clut_name
+-o.. $out_folder/src_colorGraded_by_lut_uniformSampling{$uniformSampling}_keypoints_influence{$keypoints_influence}_cube_resolution{$cube_resolution}_$clut_name
 rm[^0]
+
 #visualize the cube (Get 3D color distribution of the LUT)
 distribution3d colorcube3d primitives3d 1 add3d
 v -
