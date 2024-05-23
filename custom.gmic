@@ -3,8 +3,8 @@
 #  Created by Saleh Mosaddegh on 25/06/2020, Haarlem.
 #  Copyright © 2020 StyleShoots. All rights reserved.
 #=================================================================================================================================
-# $ gmic -m custom.gmic -clut_from_kp src.png,dst.png,out_folder,clut_name,uniformSampling,keypoints_influence,cube_resolution
-# e.g. gmic -m custom.gmic clut_from_kp dropBox/IN/kp_+1_apple_IT8.png,dropBox/IN/kp_+1_canon_IT8.png,dropBox/OUT/,IT8.png,3,100,64
+# $ gmic -m custom.gmic -clut_from_kp src.png,dst.png,out_folder,clut_name,plotNsaveIntermediateResults,uniformSampling,keypoints_influence,cube_resolution
+# e.g. gmic -m custom.gmic clut_from_kp dropBox/IN/kp_+1_apple_IT8.png,dropBox/IN/kp_+1_canon_IT8.png,dropBox/OUT/,IT8.png,1,3,100,64
 # TODO: keypoints_influence is not as effective as it should (compared to "clut_from_ab" command) and needs to be investigated further
 
 clut_from_kp :
@@ -14,11 +14,11 @@ v +
 -input $1 if $!==2 rm. fi #remove thumbnail img
 -input $2 if $!==3 rm. fi #remove thumbnail img
 
-cube_resolution=$7 # 64 is a good tradeoff: higher than 64 takes more computational time but cld improve very close keypoints
+cube_resolution=$8 # 64 is a good tradeoff: higher than 64 takes more computational time but cld improve very close keypoints
 cube_resolution1={$cube_resolution-1} 
 i[0] $cube_resolution,$cube_resolution,$cube_resolution,4 
 
-uniformSampling=$5 # choice{0,"None","8 Keypoints (RGB Corners)","27 Keypoints","64 Keypoints","125 Keypoints","216 Keypoints","343 Keypoints"},
+uniformSampling=$6 # choice{0,"None","8 Keypoints (RGB Corners)","27 Keypoints","64 Keypoints","125 Keypoints","216 Keypoints","343 Keypoints"},
 if $uniformSampling # Lock uniform sampling
   uniform_distribution {(1+$uniformSampling)^3},3 
   repeat 
@@ -43,7 +43,7 @@ repeat $nb_keypoints
 done
 -rotate[-1,-2] 90
 
-keypoints_influence=$6
+keypoints_influence=$7
 l[0]
   s c,-3
   # create a weighting map image and move it to [0]
@@ -64,7 +64,9 @@ l[0]
   fi
 endl
 
-clut_write_n_plot $0,$3,$4,$5,$6,$7,$1,$2
+if $5
+  clut_write_n_plot $0,$3,$4,$6,$7,$8,$1,$2
+fi
 v -
 
 #=================================================================================================================================
@@ -77,11 +79,11 @@ v +
 -input $2 if $!==3 rm. fi #remove thumbnail img
 
 #-fx_clut_from_ab 2,4,$3,$4,$5
-cube_resolution=$7 # 64 is a good tradeoff: higher than 64 takes more computational time but cld improve very close keypoints
+cube_resolution=$8 # 64 is a good tradeoff: higher than 64 takes more computational time but cld improve very close keypoints
 cube_resolution1={$cube_resolution-1} 
 i[0] $cube_resolution,$cube_resolution,$cube_resolution,4 # {a=$cube_resolution;[a,a,a]},4 #Input black image at position 0.
 
-uniformSampling=$5 # choice{0,"None","8 Keypoints (RGB Corners)","27 Keypoints","64 Keypoints","125 Keypoints","216 Keypoints","343 Keypoints"},
+uniformSampling=$6 # choice{0,"None","8 Keypoints (RGB Corners)","27 Keypoints","64 Keypoints","125 Keypoints","216 Keypoints","343 Keypoints"},
 if $uniformSampling # Lock uniform sampling
   uniform_distribution {(1+$uniformSampling)^3},3 
   repeat 
@@ -92,7 +94,7 @@ fi
 
 f[2] ">I(#0,round(I(#1)*(w#0-1)/255))+=[R,G,B,1]; I" #Fill image [2] with expression '>I(#0,round(I(#1)*(w#0-1)/255))+=[R,G,B,1]; I'. #If the specified expression starts with ’>’ or ’<’, the pixel access operators ’i(), i[], j()’ and ’j[]’ return values of the image being currently modified,in forward (’>’) or backward (’<’) order. The multi−threading evaluation of the expression is also disabled in this case.
 
-keypoints_influence=$6
+keypoints_influence=$7
 l[0]
   s c,-3
   +max. 1
@@ -110,7 +112,10 @@ l[0]
   rm.
 endl
 
-clut_write_n_plot $0,$3,$4,$5,$6,$7,$1,$2
+if $5
+  clut_write_n_plot $0,$3,$4,$6,$7,$8,$1,$2
+fi
+rm[0--1]
 v -
 
 #=================================================================================================================================
@@ -220,7 +225,4 @@ snapshot3d. {0,1.1*1024},1,64,64,64
 autocrop. -. 64 r. {0,1024},{0,1024},1,3,0,0,0.5,0.5 +. 64
 to. "RGB CLUT",2,0,13,1,0.75
 -o. $out_folder/LUT_cube.png
-rm.
-
-
 v -
