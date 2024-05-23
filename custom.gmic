@@ -208,7 +208,7 @@ fi
 map_clut.. [0] # Apply CLUT
 -d # if all went well, then last 2 images should be almost identical!
 
-if $9
+if 0 #$9
   if $is_png
     -o. $out_folder/dst_for_lut_US{$uniformSampling}_KI{$keypoints_influence}_CR{$cube_resolution}_$clut_name
     -o.. $out_folder/src_colorGraded_by_lut_US{$uniformSampling}_KI{$keypoints_influence}_CR{$cube_resolution}_$clut_name
@@ -288,7 +288,7 @@ if $9
   p3d. 1 #Convert primitives of selected 3D objects to outlines
 
   +3d[0--1] 
-  #pose3d. 5.10656,2.04904,2.723,-316.115,-0.0815767,4.97762,-3.59262,-41.7094,-3.40685,2.95212,4.16756,-118.811,0,0,203,1
+  pose3d. 5.10656,2.04904,2.723,-316.115,-0.0815767,4.97762,-3.59262,-41.7094,-3.40685,2.95212,4.16756,-118.811,0,0,203,1
   -d3d.
   snapshot3d. {0,1.1*1024},1,64,64,64
   autocrop. -. 64 r. {0,1024},{0,1024},1,3,0,0,0.5,0.5 +. 64
