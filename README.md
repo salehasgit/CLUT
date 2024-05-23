@@ -19,11 +19,11 @@ $ ./generate_keypoinImageFromTXT.sh IN/kp_img01_canon_IT8.txt  OUT/ img01_canon_
 Once the keypoint images are generated, run the custom script on them to generate the CLUT, e.g.:
 
 ```
-$ gmic -m custom.gmic clut_from_kp OUT/img01_apple_IT8.png,OUT/img01_canon_IT8.png,OUT/CLUTs/,img01_IT8.png,plotNsaveIntermediateResults,3,100,64
+$ gmic -m custom.gmic clut_from_kp OUT/img01_apple_IT8.png,OUT/img01_canon_IT8.png,OUT/CLUTs/,img01_IT8.png,1,3,100,64
 ```
 or
 ```
-$ gmic -m custom.gmic clut_from_ab IN/img02_apple.png,IN/img02_apple_graded_by_Humphrey.png,OUT/CLUTs/,img02.png,plotNsaveIntermediateResults,3,100,64
+$ gmic -m custom.gmic clut_from_ab IN/img02_apple.png,IN/img02_apple_graded_by_Humphrey.png,OUT/CLUTs/,img02.png,1,3,100,64
 ```
 
 Among two, the most comprehensive command is the custom command `clut_from_kp`. It allows selecting various uniform samplings as well as the cube resolution and can be extended to lock some custom keypoints.
@@ -72,7 +72,7 @@ $ gmic -m custom.gmic clut_from_kp doc_materials/kp_img01_apple_DigitalSG_96colo
 <img src="doc_materials/OUT/cube_LUT_US0_KI50_CR128_clut_from_kp_all96toBlack.cube.png" alt="" width="200"/>
 <img src="doc_materials/OUT/color_distribution_of_LUT_US0_KI50_CR128_clut_from_kp_all96toBlack.cube.png" alt="" width="200"/>
 
-<img src="doc_materials/50%.png" alt="" width="400"/>
+<img src="doc_materials/KI50percent.png" alt="" width="400"/>
 
 <img src="doc_materials/OUT/src_colorGraded_by_lut_US0_KI50_CR64_clut_from_kp_all96toBlack.cube.png" alt="" width="400"/>
 
@@ -84,7 +84,7 @@ By spreading black into the surrounding colors, we are pushing highly saturated 
 
 <img src="doc_materials/OUT/src_colorGraded_by_lut_US0_KI100_CR64_clut_from_kp_all96toBlack.cube.png" alt="" width="400"/>
 
-We conclude this section with a realistic example (the last image is showing the difference between the dst image (canon) and the src image (apple) color-graded by the resulting CLUT):
+So far we set all dst colors to black to a better visualization of the effect of the influence argument so let's now conclude this section with a realistic case of mapping from Apple converter to Canon converter:
 
 ```
 $ gmic -m custom.gmic clut_from_kp doc_materials/kp_img01_apple_DigitalSG_96colors.png,doc_materials/kp_img01_apple_DigitalSG_all96toBlack.png,doc_materials/OUT,all96toBlack.cube,1,0,50,128
@@ -97,6 +97,7 @@ $ gmic -m custom.gmic clut_from_kp doc_materials/kp_img01_apple_DigitalSG_96colo
 
 <img src="doc_materials/OUT/diff_apple2canon.png" alt="" width="400"/>
 
+The last image is the difference between the dst image (canon) and the src image (apple) color-graded by the resulting CLUT, showing a good performance even on various color gradients of IT8 color chart.
 ### Cube resolution
 
 In the previous section, When generating the clut with 50% keypoint influence, we set the cube resolution to 128 instead of default 64, despite a higher computational time. We did so to have a more dense visualization of the cube voxels but there is also a practical advantage in setting the cube resolution to higher values:
@@ -134,11 +135,11 @@ but also how it is `randomly` manipulating the rest of the colors on the right h
 
 Ideally, if we would have a large number of src color keypoints covering all areas of the RGB cube, the resulting lut would not only transfer all src colors to their dst colors very accurately, but also it would do a very decent job in guessing the dst color for any other color. In the above example, however, the keypoints distribution is far from the ideal.
 
-We have two options to avoid such random mapping: either add more src/dst color keypoints that will cover all areas of the RGB cube OR decide to limit the lut to only src keypoints and their neighboring areas (defied by the influence argument) and keep it neutral elsewhere.
+We have two options to avoid such random mapping: either add more src/dst color keypoints that will cover all areas of the RGB cube OR decide to limit the lut to only src keypoints and their neighboring areas (defined by the influence argument) and keep it neutral elsewhere.
 
-Uniform sampling argument is what we need if we decided to opt for the second option. It works by adding uniformly distributed src samples to the RGB cube and keeping their src colors. The new samples work as anchors that will stop custom src colors from spreading too far. Setting uniform sampling to 1 will lock 8=(1+1)^3 corners of the cube, setting it to 2 will lock 27=(1+2)^3 points etc.
+Uniform sampling argument is what we need if we decided to opt for the second option. It works by adding uniformly distributed src samples to the RGB cube and keeping their src colors. The new samples work as anchors that will stop custom src colors from spreading too far. Setting uniform sampling to 1 will lock 8=(1+1)^3 corners of the cube, setting it to 2 will lock 27=(1+2)^3 points and so on.
 
-To demonsterate, let's repeat the above example with the uniform sampling set to 3 (64 anchors):
+To demonstrate, let's repeat the above example with the uniform sampling set to 3 (64 anchors):
 ```
 gmic -m custom.gmic clut_from_ab doc_materials/keypoints_src_SG8x6_left-half.png,doc_materials/keypoints_dst_SG8x6_left-half.png,doc_materials/OUT,48samples_apple2canon.cube,1,3,50,64
 ```
@@ -156,6 +157,43 @@ as well as negligible manipulation of the rest of the colors on the right half o
 The careful reader, may have already figured it out by himself! that adding extra anchors can affect the smoothness of the resulting lut especially when they are too close to some keypoints. However, they will become handy if we need to generate specific luts by locking some colors in place to mimic a certain style.
 
 ## Generic CLUT
-now that we have explained the arguments, in this final section we will explain the steps for generating an enough generic CLUT, capable of transferring colors from any Apple-converted image to match the Canon version.
+Now that we have explained the arguments, we will explain, in this final section, the steps necessary for generating an enough generic CLUT, capable of transferring colors from (hopefully) any Apple-converted images to match the Canon counterpart.
 
+As it was mentioned before at the beginning, the first two arguments are 2 one-column images in which each row corresponds to one src/dst color pair. How we generate these images is up to us and in the next section we will elaborate on one such pipeline.
+
+### collecting src and dst color samples
+We start by stacking up all the color samples that we can or expect to encounter in our src images in a one-column image. We do the same for their desired dst colors. To this end, we decided to photograph both DigitalSG and IT8  color cards at different exposures. We do so using a Vertical machine equipped with an EOS-R, after investigating and concluding that the camera and OS version on which the conversions are carried out have negligible effect on the src snd dst color pairs. Refer to `Apple%20RAW%20converter/LUT_revisited_2020/refrence_RAWs_and_TIFFs/EOS_R` for the raw shots and their Canon conversions and to `Apple%20RAW%20converter/LUT_revisited_2020/refrence_RAWs_and_TIFFs/refrence_TIFFs/Apple_with_no_LUT/Mojave` for their Apple conversions.
+
+Having the src/Apple and dst/Canon conversions, we extract and save the color samples from each card at each exposure using a 11x11 average window and save the result txt files inside `IT8` and `DigitalSG` folders in `LUT_experiments/Real/G'MIC/IN/keypoints`. We used 3DLUTcreator for this purpose.
+
+We then stack up all the color samples from each card into two text files, using, for example, shell commands similar to the following inside `DigitalSG` folder:
+```
+(sed '$ d' -1_apple.txt ; sed '$ d' +0_apple.txt | tail -n '+9'; sed '$ d' +1_apple.txt | tail -n '+9'; tail -n '+9' -- +2_apple.txt) > -1_+2_apple.txt
+(sed '$ d' -1_canon.txt ; sed '$ d' +0_canon.txt | tail -n '+9'; sed '$ d' +1_canon.txt | tail -n '+9'; tail -n '+9' -- +2_canon.txt) > -1_+2_canon.txt
+```
+and do the same inside `IT8` folder.We then merge the color sample from both cards into one:
+```
+(sed '$ d' ./DigitalSG/-1_+2_apple.txt ; tail -n '+9' -- ./IT8/-1_+2_apple.txt) > -1_+2_apple_DigitalSG-IT8.txt
+(sed '$ d' ./DigitalSG/-1_+2_canon.txt ; tail -n '+9' -- ./IT8/-1_+2_canon.txt) > -1_+2_canon_DigitalSG-IT8.txt
+```
+
+finally we are ready to build the src and dst images:
+```
+$ ./generate_keypoinImageFromTXT.sh LUT_experiments/Real/G'MIC/IN/keypoints/-1_+2_apple_DigitalSG-IT8.txt  OUT/ -1_+2_apple_DigitalSG-IT8.png
+$ ./generate_keypoinImageFromTXT.sh LUT_experiments/Real/G'MIC/IN/keypoints/-1_+2_canon_DigitalSG-IT8.txt  OUT/ -1_+2_canon_DigitalSG-IT8.png
+```
+
+Even though we have collected shots for all 11 exposures in [-5 +5], we are using only 4 exposures [-1 +2] as we believe that the exposures outside this range are less likely to be used and adding them to the samples will not be beneficial.
+
+### The generic CLUT
+Having src and dst images, we are one command away from generating the generic CLUT:
+```
+gmic -m custom.gmic clut_from_kp OUT/kp_-1_+2_apple_DigitalSG-IT8.png,OUT/kp_-1_+2_canon_DigitalSG-IT8.png,OUT/CLUTs/,-1_+2_DigitalSG-IT8.png,1,0,50,64
+```
+<img src="OUT/CLUTs/cube_LUT_US0_KI50_CR64_clut_from_kp_-1_+2_DigitalSG-IT8.png.png" alt="" width="200"/>
+<img src="OUT/CLUTs/color_distribution_of_LUT_US0_KI50_CR64_clut_from_kp_-1_+2_DigitalSG-IT8.png.png" alt="" width="200"/>
+
+<img src="OUT/CLUTs/lut_US0_KI50_CR64_clut_from_kp_-1_+2_DigitalSG-IT8.png" alt="" width="400"/>
+
+### Evaluation
 
