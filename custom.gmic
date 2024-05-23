@@ -96,7 +96,7 @@ l[0]
   +max. 1
   /[-3,-1] # Divide images [0,2] (will rm img 2)
   ==. 0 #Compute boolean equality between image [1] and 0 (put the result in img 1). This is the mask for inpainting
-  inpaint_pde.. .,100%,1,20 #Inpaint image [0] by mask ., using a multiscale diffusion algorithm with 75% scales (Smoothness) and 20 iterations of delaunay-guided diffusion.
+  inpaint_pde.. .,100%,1,20 #Inpaint image [0] by mask ., using a multi-scale diffusion algorithm with 75% scales (Smoothness) and 20 iterations of delaunay-guided diffusion.
   distance. 0 #Compute distance map to isovalue 0 in image [1], with euclidean metric (put the result in img 1).
   if $keypoints_influence>0
     *. {-1/$keypoints_influence} # Multiply image [1] by {-1/(1+$keypoints_influence)}. Influence of Color Samples applied here ($6) 
@@ -124,7 +124,6 @@ uniformSampling=$4
 keypoints_influence=$5
 cube_resolution=$6
 
-
 is_png={str=lowercase(['$clut_name']);find(str,'.png')==size(str)-4}
 is_cube={str=lowercase(['$clut_name']);find(str,'.cube')==size(str)-5}
 if !$is_png" && "!$is_cube $!is_ciube error "Filename extension must be '.cube' or '.png'." fi
@@ -132,7 +131,7 @@ if !$is_png" && "!$is_cube $!is_ciube error "Filename extension must be '.cube' 
 strreplace '$clut_name','.png','' # buggy
 e $clut_name
 
-if $is_png 
+if $is_png # Warning: by saving in a 512x512 image, we loose some precision. The highest precision can be acheived by setting the cube resolution to higher than 64 and saving in cube format or bigger image dimention if possible.
   if {0,w!=64} r[0] 64,64,64,3,3 fi
   r[0] {0,r=round(whd^0.5);[r,r]},1,3,-1 #Resize image [0] to 512x512x1x3, with no interpolation, dirichlet boundary conditions and alignment (0,0,0,0).
   o[0] $out_folder/lut_uniformSampling{$uniformSampling}_keypoints_influence{$keypoints_influence}_cube_resolution{$cube_resolution}_$clut_name
