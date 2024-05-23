@@ -165,28 +165,9 @@ fi
 rm[^0]
 
 if $9
-  #visualize the cube (Get 3D color distribution of the LUT)
+   #visualize the clut cube
   [0] #Input copy of image [0] at position 1 (1 image 16x16x16x3).
-  distribution3d. #Get 3D color distribution of image [0].
-  o3d. .5
-
-  colorcube3d #Input 3D RGB-color cube.
-  o3d. 0.5 #Set opacity of 3D object [6] to 0.5.
-  col3d. 0 #Set color of 3D object [6] to (0,0,0).
-  p3d. 1 #Convert primitives of selected 3D objects to outlines
-
-  +3d[1--1] 
-  pose3d. 5.10656,2.04904,2.723,-316.115,-0.0815767,4.97762,-3.59262,-41.7094,-3.40685,2.95212,4.16756,-118.811,0,0,203,1
-  -d3d.
-  snapshot3d. {0,1.1*1024},1,64,64,64
-  autocrop. -. 64 r. {0,1024},{0,1024},1,3,0,0,0.5,0.5 +. 64
-  to. "Color distribution of the LUT",2,0,13,1,0.75
-  -o. $out_folder/color_distribution_of_LUT_US{$uniformSampling}_KI{$keypoints_influence}_CR{$cube_resolution}_$clut_name.png
-  rm.
-
-
-  #visualize the clut cube
-  k[0] to_rgb w={w} h={h}
+  to_rgb w={w} h={h}
   r. $cube_resolution,$cube_resolution,$cube_resolution,3,-1 #Resize image [0] to 64x64x64x3
   pointcloud3d. #Convert image [0] to 3D point cloud.
   o3d. .5 # Set opacity of 3D object [0] to 0.5.
@@ -195,7 +176,7 @@ if $9
     if $uniformSampling # Lock uniform sampling
       uniform_distribution {(1+$uniformSampling)^3},3
       repeat w 
-        circle3d {0,round($cube_resolution*I[$>])},0.75*$cube_resolution/64 #Input 3D circle with radius 0.75 at position xyz at the end of the stack
+        circle3d {0,round($cube_resolution1*I[$>])},0.75*$cube_resolution/64 #Input 3D circle with radius 0.75 at position xyz at the end of the stack
         col3d. {0,255*I[$>]} #Set color of last 3D object circle  to  r g b.
       done 
       rm[0] # remove the uniform image
@@ -203,10 +184,11 @@ if $9
   endl
 
   l[]
-    # Add user-defined color correspondences
+    # Add user-defined color correspondences 
     -input $7 
-    -input $8 
-    -rotate[-1,-2] -90
+    if {w}==1
+      -input $8 
+      -rotate[-1,-2] -90
       nb_keypoints={w} 
       repeat $nb_keypoints
         mode=2 # choice{"ignore","lock", "replace"} TODO: extend the script to take "mode" from the 3th column of the user-defined color correspondences img 
@@ -214,27 +196,50 @@ if $9
           tRGB=[{I(#1,$>)}]
           #echo {$tRGB}
           sRGB=[{I(#0,$>)}]
-          xyz={round(($cube_resolution1/255)*$sRGB)}
+          xy={round(($cube_resolution1/255)*[$sRGB[0],$sRGB[1]])}
+          z={round(($cube_resolution1/255)*$sRGB[2])-0.1}
           if $mode==2 pixel_RGB=$tRGB else pixel_RGB=$sRGB fi
 
-          circle3d $xyz,0.75*$cube_resolution/64 col3d. {$pixel_RGB}
+          circle3d $xy,$z,0.75*$cube_resolution/64 col3d. {$pixel_RGB}
         fi
       done
       rm[0,1]
+    else
+      rm.
+    fi
   endl
+  
 
   colorcube3d #Input 3D RGB-color cube.
-  *3d. {$cube_resolution/255} #Scale 3D object [6] with factors (0.25098,0.25098,0.25098).
+  *3d. {$cube_resolution1/255} #Scale 3D object [6] with factors (0.25098,0.25098,0.25098).
   o3d. 0.5 #Set opacity of 3D object [6] to 0.5.
   col3d. 0 #Set color of 3D object [6] to (0,0,0).
   p3d. 1 #Convert primitives of selected 3D objects to outlines
-  +3d[0--1]  
+  +3d[1--1]  
   pose3d. 5.10656,2.04904,2.723,-316.115,-0.0815767,4.97762,-3.59262,-41.7094,-3.40685,2.95212,4.16756,-118.811,0,0,203,1
   -d3d.
   snapshot3d. {0,1.1*1024},1,64,64,64
   autocrop. -. 64 r. {0,1024},{0,1024},1,3,0,0,0.5,0.5 +. 64
   to. "CLUT cube",2,0,13,1,0.75
   -o. $out_folder/cube_LUT_US{$uniformSampling}_KI{$keypoints_influence}_CR{$cube_resolution}_$clut_name.png
+  rm.
+
+  #visualize the cube (Get 3D color distribution of the LUT)
+  distribution3d. #Get 3D color distribution of image [0].
+  o3d. .5
+
+  colorcube3d #Input 3D RGB-color cube.
+  o3d. 0.5 #Set opacity of 3D object [6] to 0.5.
+  col3d. 0 #Set color of 3D object [6] to (0,0,0).
+  p3d. 1 #Convert primitives of selected 3D objects to outlines
+
+  +3d[0--1] 
+  pose3d. 5.10656,2.04904,2.723,-316.115,-0.0815767,4.97762,-3.59262,-41.7094,-3.40685,2.95212,4.16756,-118.811,0,0,203,1
+  -d3d.
+  snapshot3d. {0,1.1*1024},1,64,64,64
+  autocrop. -. 64 r. {0,1024},{0,1024},1,3,0,0,0.5,0.5 +. 64
+  to. "Color distribution of the LUT",2,0,13,1,0.75
+  -o. $out_folder/color_distribution_of_LUT_US{$uniformSampling}_KI{$keypoints_influence}_CR{$cube_resolution}_$clut_name.png
   rm.
 fi
 v -
