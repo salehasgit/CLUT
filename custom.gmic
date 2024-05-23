@@ -154,6 +154,49 @@ else
 fi
 rm[^0]
 
+#visualize the cube
+
+_N=64
+k[0] to_rgb w={w} h={h}
+r. $_N,$_N,$_N,3,-1 pointcloud3d. o3d. 1 #todo: opacity $12
+
+l[]
+  if $uniformSampling # Lock uniform sampling
+    uniform_distribution {(1+$uniformSampling)^3},3
+    repeat w circle3d {0,round($_N*I[$>])},0.75 col3d. {0,255*I[$>]} done rm[0]
+  fi
+  colorcube3d *3d. {$_N/255} o3d. 0.5 col3d. 0 p3d. 1
+endl
++3d[0--1]
+
+  # Add user-defined color correspondences
+-input $1 
+-input $2 
+
+-rotate[-1,-2] -90
+nb_keypoints={w} 
+repeat $nb_keypoints
+  mode=2 # choice{"ignore","lock", "replace"} TODO: extend the script to take "mode" from the 3th column of the user-defined color correspondences img 
+  if $mode # if not ignore (lock or replace)
+    tRGB=[{I(#-1,$>)}]
+    #echo {$tRGB}
+    sRGB=[{I(#-2,$>)}]
+    xyz={round(($cube_resolution1/255)*$sRGB)}
+    if $mode==2 pixel_RGB=$tRGB else pixel_RGB=$sRGB fi
+
+    circle3d[0] $xyz,0.75 col3d[0] {$pixel_RGB}
+  fi
+done
+
+  -d
+  -rm[-2,-1]
+  colorcube3d *3d. {$_N/255} o3d. 0.5 col3d. 0 p3d. 1
+
++3d[0--1]
+pose3d. 5.10656,2.04904,2.723,-316.115,-0.0815767,4.97762,-3.59262,-41.7094,\
+        -3.40685,2.95212,4.16756,-118.811,0,0,203,1
+
+
 #visualize the cube (Get 3D color distribution of the LUT)
-distribution3d colorcube3d primitives3d 1 add3d
-v -
+#distribution3d colorcube3d primitives3d 1 add3d
+#v -
