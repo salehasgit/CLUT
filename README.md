@@ -38,38 +38,64 @@ On MacOS, tested with GMIC v 2.9.1
 
 ## Background (and understanding the parameters)
 
-Setting the Keypoints Influence to zero, will only affect/alter src keypoints in the color cube to their dst colors and the rest of cube will be identical to the neutral LUT. As we increase the influence, the dst color of the src keypoints will smoothly spread to the surrounding colors, creating a smoother transition and at the same time altering the surrounding `neutral` colors accordingly (this is especially visible when plotting the 3D color distribution of the LUT, where empty areas in the cube indicate missing destination colors).
+Let's start with an example and consider 96 swatch colors of DigitalSG colorChecker from this image:
 
-As an example, assume that we would like to build a CLUT that will map only, and only, the pure black color (0,0,0) to a pure white (255,255.255). To do so, we need to build src and dst images with size 1pixel and fill them with black and white respectively and then call the script with keypoints influence and also the uniform sampling set to zero (we will explain the latter one later).
+<img src="IN/img01_canon.png" alt="" width="400"/>
+
+Now let's assume that we would like to build a CLUT that will map all but only, and only, these 96 colors to the pure black color (0,0,0). To do so, we build a one-column 96x1 src image, filled with samples from 96 patches (using a 11x11 average window) as well as a pure black dst image with the same size and then call the script (we will explain the arguments shortly):
 ```
-$ gmic -m custom.gmic clut_from_kp report/kp_src_1kp.png,report/kp_dst_1kp.png,report/OUT,black2white.cube,1,0,0,64
+$ gmic -m custom.gmic clut_from_kp doc_materials/kp_img01_apple_DigitalSG_96colors.png,doc_materials/kp_img01_apple_DigitalSG_all96toBlack.png,doc_materials/OUT,all96toBlack.cube,1,0,0,64
 ```
-<img src="./report/OUT/cube_LUT_US0_KI0_CR64_clut_from_kp_black2white.cube.png" alt="" width="200"/>
-<img src="./report/OUT/color_distribution_of_LUT_US0_KI0_CR64_clut_from_kp_black2white.cube.png" alt="" width="200"/>
+Now let's plot the generated clut (left) and its color distribution (right):
 
+<img src="doc_materials/OUT/cube_LUT_US0_KI0_CR64_clut_from_kp_all96toBlack.cube.png" alt="" width="200"/>
+<img src="doc_materials/OUT/color_distribution_of_LUT_US0_KI0_CR64_clut_from_kp_all96toBlack.cube.png" alt="" width="200"/>
 
-For the sake of demonstration, we are plotting a small sphere at the src location inside the cube with the dst color. Also please note that the difference between the clut and its color distribution are visually undetectable since the difference is in only one color (out of 64^3=262144 colors).
-The procedure for any number of colors is the same. For example consider the 96 colors of DigitalSG colorChecker from this image:
-![DigitalSG colorChecker](IN/img01_canon.png)
-and let's generate a CLUT which will map all these colors to pure black!
+For the sake of demonstration, for each keypoint, we also plot a small sphere at the src location inside the cube and set its color to the dst color. 
+
+Please note that, for this particular lut, the difference between the clut and its color distribution are visually undetectable since only a small number of colors (96 out of 64^3=262144 colors) are being manipulated. Nevertheless, applying the lut on the original image will map all 96 colors to pure black, without touching/`influencing` any other color:
 ```
-$ gmic -m custom.gmic clut_from_kp report/kp_img01_canon_DigitalSG_all96.png,report/kp_dst_1kp.png,report/OUT,black2white.cube,1,0,0,64
+$ gmic -input_cube doc_materials/OUT/lut_US0_KI0_CR64_clut_from_kp_all96toBlack.cube IN/img01_canon.png +map_clut. [0] -o. doc_materials/OUT/src_colorGraded_by_lut_US0_KI0_CR64_clut_from_kp_all96toBlack.cube.png
 ```
-<img src="report/OUT/cube_LUT_US0_KI0_CR256_clut_from_kp_all96toBlack.cube.png" alt="" width="200"/>
-<img src="report/OUT/color_distribution_of_LUT_US0_KI0_CR256_clut_from_kp_all96toBlack.cube.png" alt="" width="200"/>
+<img src="doc_materials/OUT/src_colorGraded_by_lut_US0_KI0_CR64_clut_from_kp_all96toBlack.cube.png" alt="" width="400"/>
 
+ Hopefully it is clear that by setting the Keypoint influence to zero, we are generating a lut that will only affect/alter src keypoints in the color cube to their dst colors and the rest of cube will be identical to the neutral LUT.
 
-Again, please note that the difference between the clut and its color distribution are visually undetectable but nevertheless, applying the lut on the original image will set all 96 colors to pure black, without touching/`influencing` any other color:
+To further visualize the effect of this argument,let's set the keypoint influence to 50% and also plot some cross sections of the clut cube:  
 ```
-$ gmic -input_cube report/OUT/lut_US0_KI0_CR256_clut_from_kp_all96toBlack.cube IN/img01_canon.png +map_clut. [0] -o. report/OUT/src_colorGraded_by_lut_US0_KI0_CR256_clut_from_kp_all96toBlack.cube.png
+$ gmic -m custom.gmic clut_from_kp doc_materials/kp_img01_apple_DigitalSG_96colors.png,doc_materials/kp_img01_apple_DigitalSG_all96toBlack.png,doc_materials/OUT,all96toBlack.cube,1,0,50,128
 ```
-<img src="report/OUT/src_colorGraded_by_lut_US0_KI0_CR256_clut_from_kp_all96toBlack.cube.png" alt="" width="400"/>
 
-You may have noticed that we set the cube resolution to 256 instead of default 64 and there is a good reason for that:
+<img src="doc_materials/OUT/cube_LUT_US0_KI50_CR128_clut_from_kp_all96toBlack.cube.png" alt="" width="200"/>
+<img src="doc_materials/OUT/color_distribution_of_LUT_US0_KI50_CR128_clut_from_kp_all96toBlack.cube.png" alt="" width="200"/>
 
-important note: as long as the cube resolution is equal or higher than 256, the resulting LUT will always map the keypoints colors to their destination colors precisely, no matter what uniform sampling and influence values are chosen, otherwise the exact color transfer of the keypoints may not happen due to downsampling of the keypoints location during the optimization. Also when saving the cube as a 252x252 png file (hence reducing the cube resolution to 64), some precision is lost and keypoints may not be mapped exactly to their destination colors due to the interpolation during mapping.
+<img src="doc_materials/50%.png" alt="" width="400"/>
 
-Since 
+<img src="doc_materials/OUT/src_colorGraded_by_lut_US0_KI50_CR64_clut_from_kp_all96toBlack.cube.png" alt="" width="400"/>
 
-<img src="report/OUT/cube_LUT_US0_KI50_CR128_clut_from_kp_all96toBlack.cube.png" alt="" width="200"/>
-<img src="report/OUT/color_distribution_of_LUT_US0_KI50_CR128_clut_from_kp_all96toBlack.cube.png" alt="" width="200"/>
+As we increase the influence percentage, the dst color of the src keypoints will smoothly spread to the surrounding colors, creating a smoother transition and at the same time altering the surrounding `neutral` colors accordingly (this is especially visible in the 3D color distribution of the LUT, where empty areas in the cube indicate missing destination colors).
+By spreading black into the surrounding colors, we are pushing highly saturated colors to the zero saturation corner of the color cube. At 100% influence, it should not come as a surprise then to see the content of the lut to be reduced to a pure black color sitting on (0,0,0) corner of the cube and the lut to map each and evry color to the black: 
+
+<img src="doc_materials/OUT/cube_LUT_US0_KI100_CR64_clut_from_kp_all96toBlack.cube.png" alt="" width="200"/>
+<img src="doc_materials/OUT/color_distribution_of_LUT_US0_KI100_CR64_clut_from_kp_all96toBlack.cube.png" alt="" width="200"/>
+
+<img src="doc_materials/OUT/src_colorGraded_by_lut_US0_KI100_CR64_clut_from_kp_all96toBlack.cube.png" alt="" width="400"/>
+
+
+## Cube resolution
+
+You may have noticed that when generating the clut with 50% keypoint influence above, we set the cube resolution to 128 instead of default 64, despite a higher computational time. We did so to have a more dense visualization of the cube voxels but there is also a practical advantage in setting the cube resolution to higher values:
+
+`As long as the cube resolution is equal or higher than 256, the resulting LUT will always map, precisely, the keypoint colors to their destination colors, no matter what uniform sampling and influence values are chosen, otherwise the exact color transfer of the keypoints may not happen due to downsampling of the keypoints location during the optimization. Also, even if the cube resolution is hight enough, when saving the cube as a 252x252 png file (hence reducing the cube resolution to 64), some precision is lost and keypoints can only be mapped to their destination colors up to the interpolation accuracy.`
+
+To better understand, consider the following image, composed of 5 column images, where the first and last images are src and dst images respectively and 2th, 3th and 4th images are result of applying luts generated at 64, 128 and 256 cube resolutions on the first image.
+
+<img src="doc_materials/cube-resolution.png" alt="" width="400"/>
+
+In summary, if we can handle heavy .cube or large .png lut files, then we can set the cube resolution to 256 to be sure that all src colors are mapped exactly to dst colors.
+
+## Uniform Sampling
+to demonstrate this, let's create two small images from our src and dst 96 samples:
+
+<img src="doc_materials/keypoints_src_SG8x6_left-half.png" alt="" width="200"/>
+<img src="doc_materials/keypoints_dst_SG8x6_left-half.png" alt="" width="200"/>
