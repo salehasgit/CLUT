@@ -21,8 +21,8 @@ i[0] $cube_resolution,$cube_resolution,$cube_resolution,4
 uniformSampling=$6 # choice{0,"None","8 Keypoints (RGB Corners)","27 Keypoints","64 Keypoints","125 Keypoints","216 Keypoints","343 Keypoints"},
 if $uniformSampling # Lock uniform sampling
   uniform_distribution {(1+$uniformSampling)^3},3 
-  repeat 
-    w point[0] {round($cube_resolution1*I[$>])},1,{255*I[$>]},1 
+  repeat w 
+    point[0] {round($cube_resolution1*I[$>])},1,{255*I[$>]},1 
   done 
   rm.
 fi
@@ -41,6 +41,21 @@ repeat $nb_keypoints
     point[0] $xyz,1,{$pixel_RGB},1 
   fi
 done
+
+if 0
+  to_rgb[0]
+  r[0] $cube_resolution,$cube_resolution,$cube_resolution,3,-1 #Resize image [0] to 64x64x64x3
+  pointcloud3d[0] #Convert image [0] to 3D point cloud.
+  colorcube3d #Input 3D RGB-color cube.
+  mv. 0
+  *3d[0] {$cube_resolution1/255} #Scale 3D object [6] with factors (0.25098,0.25098,0.25098).
+  o3d[0] 0.5 #Set opacity of 3D object [6] to 0.5.
+  col3d[0] 0 #Set color of 3D object [6] to (0,0,0).
+  p3d[0] 1 #Convert primitives of selected 3D objects to outlines
+  +3d[0-1] 
+  -d3d[0]
+fi
+
 -rotate[-1,-2] 90
 
 keypoints_influence=$7
@@ -49,7 +64,11 @@ l[0]
   # create a weighting map image and move it to [0]
   if $keypoints_influence<100 # Need to compute a weighting map.
     +distance. 1
-    if $keypoints_influence ^. {1/(0.05+4*$keypoints_influence%)} else f. 0 fi
+    if $keypoints_influence 
+      ^. {1/(0.05+4*$keypoints_influence%)} 
+    else 
+      f. 0 
+    fi
     n. 0,1 nm. influence mv. -3
   fi
   ==. 0 # generate the mask
@@ -88,13 +107,28 @@ i[0] $cube_resolution,$cube_resolution,$cube_resolution,4 # {a=$cube_resolution;
 uniformSampling=$6 # choice{0,"None","8 Keypoints (RGB Corners)","27 Keypoints","64 Keypoints","125 Keypoints","216 Keypoints","343 Keypoints"},
 if $uniformSampling # Lock uniform sampling
   uniform_distribution {(1+$uniformSampling)^3},3 
-  repeat 
-    w point[0] {round($cube_resolution1*I[$>])},1,{255*I[$>]},1 
+  repeat w 
+    point[0] {round($cube_resolution1*I[$>])},1,{255*I[$>]},1 
   done 
   rm.
 fi
 
-f[2] ">I(#0,round(I(#1)*(w#0-1)/255))+=[R,G,B,1]; I" #Fill image [2] with expression '>I(#0,round(I(#1)*(w#0-1)/255))+=[R,G,B,1]; I'. #If the specified expression starts with ’>’ or ’<’, the pixel access operators ’i(), i[], j()’ and ’j[]’ return values of the image being currently modified,in forward (’>’) or backward (’<’) order. The multi−threading evaluation of the expression is also disabled in this case.
+#cube_resolution1={w#0-1} #assertion
+f[2] ">I(#0,round(I(#1)*(w#0-1)/255))=[R,G,B,1]; I" #Fill image [2] with expression '>I(#0,round(I(#1)*(w#0-1)/255))+=[R,G,B,1]; I'. #If the specified expression starts with ’>’ or ’<’, the pixel access operators ’i(), i[], j()’ and ’j[]’ return values of the image being currently modified,in forward (’>’) or backward (’<’) order. This expression does not fill/modify the image 2 (it replace each pixel with itself!), but changes image 0 via the first part of the expression: each voxel at the location on the cube calculated by the current pixel's rgb of image 1 is replaced by corresponding pixel from image 2 (note: in the original implementation, the corresponding pixel from image 2 is added to the current value of the voxel. this will create wrong colors when many src pixels in image 1 have the same color but different colors in the dst image. With our implementation, the last replacement overwrites the rest. this is also allows us to add uniform samples in the previous step. )
+
+if 0
+  to_rgb[0]
+  r[0] $cube_resolution,$cube_resolution,$cube_resolution,3,-1 #Resize image [0] to 64x64x64x3
+  pointcloud3d[0] #Convert image [0] to 3D point cloud.
+  colorcube3d #Input 3D RGB-color cube.
+  mv. 0
+  *3d[0] {$cube_resolution/255} #Scale 3D object [6] with factors (0.25098,0.25098,0.25098).
+  o3d[0] 0.5 #Set opacity of 3D object [6] to 0.5.
+  col3d[0] 0 #Set color of 3D object [6] to (0,0,0).
+  p3d[0] 1 #Convert primitives of selected 3D objects to outlines
+  +3d[0-1] 
+  -d3d[0]
+fi
 
 keypoints_influence=$7
 l[0]
@@ -209,7 +243,6 @@ if $9
     fi
   endl
   
-
   colorcube3d #Input 3D RGB-color cube.
   *3d. {$cube_resolution1/255} #Scale 3D object [6] with factors (0.25098,0.25098,0.25098).
   o3d. 0.5 #Set opacity of 3D object [6] to 0.5.
