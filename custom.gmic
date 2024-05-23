@@ -1,6 +1,6 @@
 
 #=================================================================================================================================
-# $ gmic -m custom.gmic -generate_CLUT keypoints.png,uniformSampling,keypoint_influence
+# $ gmic -m custom.gmic -generate_CLUT keypoints.png,uniformSampling,keypoints_influence
 generate_CLUT :
 v + 
 cube_resolution=64
@@ -34,19 +34,19 @@ repeat $nb_keypoints
 done
 
 rm[-2,-1]
-keypoint_influence=$3
+keypoints_influence=$3
 s c,-3
 # create a weighting map image and move it to [0]
-if $keypoint_influence<100 # Need to compute a weighting map.
+if $keypoints_influence<100 # Need to compute a weighting map.
   +distance. 1
-  if $keypoint_influence ^. {1/(0.05+4*$keypoint_influence%)} else f. 0 fi
+  if $keypoints_influence ^. {1/(0.05+4*$keypoints_influence%)} else f. 0 fi
   n. 0,1 nm. influence mv. -3
 fi
 ==. 0 # generate the mask
 inpaint_pde.. .,100%,1,20 #Inpaint image [1] by mask ., using a multiscale diffusion algorithm with 100% scales and 20 iterations of delaunay-guided diffusion.
 rm. # remove the mask
 
-if $keypoint_influence<100 # using "if {$influence}" instead is buggy!
+if $keypoints_influence<100 # using "if {$influence}" instead is buggy!
   100%,100%,100%,3,[x,y,z] #Input image at position 2, with values '[x,y,z]' (1 image 64x64x64x3).
   n. 0,255 #Normalize image [2] in range [0,255], with constant-case ratio 0.
   j. ..,0,0,0,0,1,...  #Draw image [1] at (0,0,0,0) on image [2], with opacity 1 and mask [0].
@@ -56,7 +56,7 @@ fi
 c. 0,255 
 
 # save it as .cube
-output_cube[-1] lut_uniformSampling{$uniformSampling}_keypoint_influence$keypoint_influence.cube
+output_cube[-1] lut_uniformSampling{$uniformSampling}_keypoints_influence$keypoints_influence.cube
 
 # Apply CLUT
 -input $1
@@ -66,7 +66,7 @@ map_clut.. [0] # w/o spatial regularization
 
 rm[-2,-1]
 #convert to Haldclut png    
--r 64,64,64,3,3 -r 512,512,1,3,-1 -o lut_uniformSampling{$uniformSampling}_keypoint_influence$keypoint_influence.png
+-r 64,64,64,3,3 -r 512,512,1,3,-1 -o lut_uniformSampling{$uniformSampling}_keypoints_influence$keypoints_influence.png
 
 #visualize the cube (Get 3D color distribution of the LUT)
 distribution3d colorcube3d primitives3d 1 add3d
@@ -96,10 +96,9 @@ if $uniformSampling # Lock uniform sampling
   rm.
 fi
 
--d
-
 f[1] ">I(#0,round(I(#2)*(w#0-1)/255))+=[R,G,B,1]; I" #Fill image [1] with expression '>I(#0,round(I(#2)*(w#0-1)/255))+=[R,G,B,1]; I'. #If the specified expression starts with ’>’ or ’<’, the pixel access operators ’i(), i[], j()’ and ’j[]’ return values of the image being currently modified,in forward (’>’) or backward (’<’) order. The multi−threading evaluation of the expression is also disabled in this case.
--d
+
+keypoints_influence=$6
 l[0]
   s c,-3
   +max. 1
@@ -107,7 +106,7 @@ l[0]
   ==. 0 #Compute boolean equality between image [1] and 0 (put the result in img 1). This is the mask for inpainting
   inpaint_pde.. .,75%,1 
   distance. 0 #Compute distance map to isovalue 0 in image [1], with euclidean metric (put the result in img 1).
-  *. {-1/(1+$6)} # Multiply image [1] by {-1/(1+$6)}. Influence of Color Samples applied here ($6) 
+  *. {-1/(1+$keypoints_influence)} # Multiply image [1] by {-1/(1+$keypoints_influence)}. Influence of Color Samples applied here ($6) 
   exp. #Compute pointwise exponential of image [1].
   f.. "f = i(#-1); f*I + (1-f)*[x,y,z]*255/(w-1)" #Fill image [0] with expression 'f = i(#-1); f*I + (1-f)*[x,y,z]*255/(w-1)' 
   rm.
@@ -117,15 +116,20 @@ endl
 is_png={str=lowercase(['"$4"']);find(str,'.png')==size(str)-4}
 is_cube={str=lowercase(['"$4"']);find(str,'.cube')==size(str)-5}
 if !$is_png" && "!$is_cube $!is_ciube error "Filename extension must be '.cube' or '.png'." fi
+
+nameWithoutExt=$4
+strreplace $nameWithoutExt,'.png','' # buggy
+e $nameWithoutExt
+
 if $is_png 
-  r[0] {0,r=round(whd^0.5);[r,r]},1,3,-1 o[0] "$3/$4"
+  r[0] {0,r=round(whd^0.5);[r,r]},1,3,-1 o[0] $3/lut_uniformSampling{$uniformSampling}_keypoints_influence{$keypoints_influence}_$4
 else
   if {0,w>32} r3dx[0] 32 fi
-  output_cube[0] "$3/$4"
+  output_cube[0] $3/lut_uniformSampling{$uniformSampling}_keypoints_influence{$keypoints_influence}_$4
 fi
 rm[0]
   
--input $3/$4 mv[-1] 0
+-input $3/lut_uniformSampling{$uniformSampling}_keypoints_influence{$keypoints_influence}_$4 mv[-1] 0
 map_clut[-1] [0] # Apply CLUT
 -d v - # if all went well, then last 2 images should be almost identical!
 rm[^0]
