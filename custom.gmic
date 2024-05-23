@@ -61,6 +61,9 @@ l[0]
   fi
 endl
 
+clut_write_n_plot $0,$3,$4,$5,$6,$7
+v -
+
 #=================================================================================================================================
 # $ gmic -m custom.gmic -clut_from_ab src.tif,dst.tif,out_folder,clut_name,uniformSampling,keypoints_influence,cube_resolution
 # e.g. gmic -m custom.gmic clut_from_ab srcImg.tif,srcImg_color_corrected_Humphrey.tif,./,lut.png,3,100,64
@@ -105,12 +108,11 @@ l[0]
   rm.
 endl
 
-clut_write_n_plot ab,$3,$4
-
+clut_write_n_plot $0,$3,$4,$5,$6,$7
 v -
 
 #=================================================================================================================================
-# $ gmic -m custom.gmic -clut_write_n_plot src.tif,dst.tif,out_folder,clut_name,uniformSampling,keypoints_influence,cube_resolution
+# $ gmic -m custom.gmic -clut_write_n_plot method,out_folder,clut_name,uniformSampling,keypoints_influence,cube_resolution
 # e.g. gmic -m custom.gmic clut_from_ab srcImg.tif,srcImg_color_corrected_Humphrey.tif,./,lut.png,3,100,64
 
 clut_write_n_plot :
@@ -118,8 +120,10 @@ v +
 
 out_folder=$2
 clut_name=$1_$3
+uniformSampling=$4
+keypoints_influence=$5
+cube_resolution=$6
 
-clut_name=lowercase(['$clut_name'])
 
 is_png={str=lowercase(['$clut_name']);find(str,'.png')==size(str)-4}
 is_cube={str=lowercase(['$clut_name']);find(str,'.cube')==size(str)-5}
