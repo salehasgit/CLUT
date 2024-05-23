@@ -1,10 +1,13 @@
 # CLUT
 generating CLUT via G'MIC
 
-The most comprehensive command is the custom command "generate_CLUT" in the custom.gmic file. It allows selecting various uniform samplings and can be extended to lock some custom keypoints. However, it takes a keypoints correspondence image as the first parameter. To generate the keypoints image from two txt files, one first needs to directly run generate_CLUT.sh which in return generates the keypoints image as well as the CLUT that maps the src colors to the dst colors with no uniform sampling. Once the keypoints image is generated, one can run the custom script to generate the CLUT with a different uniform sampling.
+The most comprehensive command is the custom command "clut_from_customKeypoints" in the custom.gmic file. It allows selecting various uniform samplings as well as the cybe resolution and can be extended to lock some custom keypoints. The first two arguments are 2 one-column images src.png and dst.png in which each row corresponds to one color keypoint. run "generate_keypoinImageFromTXT.sh" to generate a keypoint images from a txt file. Once the keypoint images are generated, one can run the custom script on them to generate the CLUT .
 
 see each script for more details about the arguments and parameters.
 
-$ ./generate_CLUT.sh src.txt dst.txt colorCard interpolation_tech cube_resolution setup_exposure result_folder
-$ cd result_folder
-$ gmic -m ../custom.gmic -generate_CLUT keypoints.png,uniformSampling
+$ ./generate_keypoinImageFromTXT.sh dropBox/IN/keypoints/IT8/+1_apple_IT8.txt  dropBox/OUT/IT8_dev-vertical/ +1_apple_IT8.png
+$ ./generate_keypoinImageFromTXT.sh dropBox/IN/keypoints/IT8/+1_canon_IT8.txt  dropBox/OUT/IT8_dev-vertical/ +1_canon_IT8.png
+$ gmic -m custom.gmic clut_from_customKeypoints dropBox/OUT/IT8_dev-vertical/keypoints_+1_apple_IT8.png,dropBox/OUT/IT8_dev-vertical/keypoints_+1_canon_IT8.png,dropBox/OUT/IT8_dev-vertical/,IT8.png,3,100,64
+or
+$ gmic -m custom.gmic clut_from_ab dropBox/OUT/IT8_dev-vertical/keypoints_+1_apple_IT8.png,dropBox/OUT/IT8_dev-vertical/keypoints_+1_canon_IT8.png,dropBox/OUT/IT8_dev-vertical/,IT8.png,3,100,64
+
